@@ -1,6 +1,7 @@
 # EVCacheLite: High-Scale Data Platform Engine
 
 **EVCacheLite** is a distributed, thread-safe, and resilient "Stowage" engine. It aims to solve one of the hardest problems in distributed systems, maintaining a high-throughput state without global contention.
+
 ---
 
 ### Goals
