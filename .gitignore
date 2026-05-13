@@ -1,0 +1,20 @@
+# OS-specific metadata files
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# Java compilation artifacts
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE and Project configuration files
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+bin/
+.vscode/

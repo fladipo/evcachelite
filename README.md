@@ -1,15 +1,16 @@
 # EVCacheLite: High-Scale Data Platform Engine
 
 **EVCacheLite** is a distributed, thread-safe, and resilient "Stowage" engine. It aims to solve one of the hardest problems in distributed systems, maintaining a high-throughput state without global contention.
-
 ---
 
 ### Goals
 
 1.  **Distributed State:** Implement a **Consistent Hash Ring** with 150 virtual nodes to minimize Hot Shards.
 2.  **Concurrency:** Leverage **Java 21 Virtual Threads** to handle thousands of concurrent requests without carrier thread pinning or thread pool exhaustion.
-3.  **High Efficiency:** A thread-safe **LRU Eviction Policy** using `ConcurrentHashMap` and `ReentrantReadWriteLock` for O(1) performance.
+3.  **High Efficiency:** A thread-safe **LRU Eviction Policy** using `ConcurrentHashMap` and `ReentrantLock` for O(1) performance.
 4.  **Resilience:** Integrated **Resilience4j Circuit Breakers** to prevent Thundering Herds from taking down Cassandra/DB clusters.
+
+I used Lock Striping with ReentrantLock to provide Strong Consistency for the LRU state. I chose this over a lock-free approach because maintaining the integrity of the Doubly Linked List pointers during eviction is more critical than the minor latency hit of a write-lock, especially since I minimized contention by sharding the cache into segments.
 
 ---
 
@@ -19,12 +20,12 @@
 
 In a high throughput system, static state can hinder performance. By using instance-based scoping, I allow the data platform to manage multiple isolated cache objects (separate caches for Login vs. Metadata). This eliminates a global lock contention across the JVM. Inner classes (like `Node` and `CacheShard`) are explicitly marked static to decouple them from the parent EVCacheLite instance, preventing hidden pointers from creating memory leaks and ensuring the Garbage Collector can reclaim resources efficiently.
 
-#### 2. ReentrantReadWriteLock (RRWL) vs. Synchronized
+#### 2. ReentrantLock (RL) vs. Synchronized
 
-I chose **RRWL** because 99% of Data Platform traffic is `get()` (Reads) and only 1% is `put()` (Writes).
+I chose **RL** because 99% of Data Platform traffic is `get()` (Reads) and only 1% is `put()` (Writes).
 
-- **Parallelism:** A standard `synchronized` block represents a line while a RRWL is like a library where a 100 people can read simultaneously. We only clear the room when someone writes, for example.
-- **Virtual-Thread Friendly:** In Java 21, `synchronized` causes thread pinning (blocking the OS carrier thread) while RRWL allows virtual threads to unmount while waiting. This ends up freeing the CPU to work on other tasks.
+- **Parallelism:** A standard `synchronized` block represents a line while a RL is like a library where a 100 people can read simultaneously. We only clear the room when someone writes, for example.
+- **Virtual-Thread Friendly:** In Java 21, `synchronized` causes thread pinning (blocking the OS carrier thread) while RL allows virtual threads to unmount while waiting. This ends up freeing the CPU to work on other tasks.
 
 #### 3. Lock Stripping & Atomicity
 
