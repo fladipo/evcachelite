@@ -14,9 +14,7 @@ import org.slf4j.LoggerFactory;
  * <b>Why TreeMap?</b> A {@link TreeMap} is used because it inherently maintains
  * sorted order through an underlying Red-Black Tree. This allows us to use
  * {@code ceilingEntry()} to find the owning shard in O(log n) time. 
- * While a HashMap is O(1), it suffers from performance spikes during rebalancing. 
- * The TreeMap provides smooth, continuous rebalancing and can actually be faster 
- * for long keys since it only compares the first few characters to determine order.
+ * While a HashMap is O(1), it suffers from performance spikes during rebalancing.
  * </p>
  * 
  * <p>
