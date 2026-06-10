@@ -1,6 +1,7 @@
 package com.example;
 
 import java.util.TreeMap;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.commons.codec.digest.MurmurHash3;
@@ -14,7 +15,8 @@ import org.slf4j.LoggerFactory;
  * <b>Why TreeMap?</b> A {@link TreeMap} is used because it inherently maintains
  * sorted order through an underlying Red-Black Tree. This allows us to use
  * {@code ceilingEntry()} to find the owning shard in O(log n) time. 
- * While a HashMap is O(1), it suffers from performance spikes during rebalancing.
+ * While a HashMap is O(1), it has no concept of successor lookup, which 
+ * TreeMap provides in O(logn) time.
  * </p>
  * 
  * <p>
@@ -56,7 +58,7 @@ public class HashRing {
      */
     private long hash(String key) {
         // x86 variant is optimized for low-latency hashing
-        int hash = MurmurHash3.hash32x86(key.getBytes());
+        int hash = MurmurHash3.hash32x86(key.getBytes(StandardCharsets.UTF_8));
 
         // Handle signed bit to ensure we stay in the positive ring space
         return (long) hash & 0xFFFFFFFFL;
