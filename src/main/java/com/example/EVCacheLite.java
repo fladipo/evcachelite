@@ -3,7 +3,7 @@ package com.example;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +68,7 @@ public class EVCacheLite<K, V> {
      * 
      * <p>
      * Each shard manages its own lifecycle, including LRU eviction, metrics, and
-     * concurrency control through a {@link ReentrantReadWriteLock}.
+     * concurrency control through a {@link ReentrantLock}.
      * </p>
      * 
      * @param <K> the type of keys maintained by this cacheShard.
@@ -78,7 +78,7 @@ public class EVCacheLite<K, V> {
         // Internal state marked final where possible to ensure visibility across
         // threads after construction
         final Map<K, Node<K, V>> map;
-        final ReentrantReadWriteLock shardLock = new ReentrantReadWriteLock();
+        final ReentrantLock shardLock = new ReentrantLock();
         static final Logger logger = LoggerFactory.getLogger(CacheShard.class);
         final int capacity;
 
@@ -149,7 +149,7 @@ public class EVCacheLite<K, V> {
 
                 // Without sharding our cache, this lock would create a global lock here
                 // resulting in an absolute bottleneck, making the cache thread-safe but not scalable.
-                shardLock.writeLock().lock();
+                shardLock.lock();
                 Node<K, V> node = null;
                 try {
                     if (map.containsKey(key)) {
@@ -167,7 +167,7 @@ public class EVCacheLite<K, V> {
                     logger.error("[Shard {}] Critical failure during GET for key: {}", shardId, key, e);
                     throw e;
                 } finally {
-                    shardLock.writeLock().unlock();
+                    shardLock.unlock();
                 }
 
                 return node.value;
@@ -194,7 +194,7 @@ public class EVCacheLite<K, V> {
             // is safer for atomicity but it does sacrifice read concurrency and creates
             // contention.
             return putTimer.record(() -> {
-                shardLock.writeLock().lock();
+                shardLock.lock();
                 try {
                     if (map.containsKey(key)) {
                         this.upSertCounter.increment();
@@ -224,7 +224,7 @@ public class EVCacheLite<K, V> {
                     logger.error("[Shard {}] Critical failure during PUT for key: {}", shardId, key, e);
                     throw e;
                 } finally {
-                    shardLock.writeLock().unlock();
+                    shardLock.unlock();
                 }
             });
         }
